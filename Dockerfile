@@ -3,7 +3,9 @@ FROM oven/bun:latest AS builder
 WORKDIR /app
 
 # Copy configuration files
-COPY package.json bun.lock tsconfig.json tsconfig.eslint.json eslint.config.js ./
+# bun.lock is gitignored, so we don't copy it.
+# We copy package.json and config files.
+COPY package.json tsconfig.json tsconfig.eslint.json eslint.config.js ./
 
 # Copy all workspaces
 COPY apps/ ./apps/
@@ -18,7 +20,9 @@ COPY shared/ ./shared/
 COPY tools/ ./tools/
 
 # Install dependencies with isolated linker
-RUN bun install --frozen-lockfile --linker isolated
+# Removing --frozen-lockfile because bun.lock is not in the repo
+# causes issues in the docker container.
+RUN bun install --linker isolated
 
 # 1. Build Shared (Dependency)
 WORKDIR /app/shared
