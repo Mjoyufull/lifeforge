@@ -1,34 +1,69 @@
-FROM oven/bun:latest AS base
+# Base stage for building
+FROM oven/bun:latest AS builder
 WORKDIR /app
 
-# Copy everything first for better debugging
-COPY . .
+# Copy configuration files
+COPY package.json bun.lock tsconfig.json tsconfig.eslint.json eslint.config.js ./
 
-# Debug: List files to confirm structure
-RUN ls -la && \
-    echo "Root package.json exists?" && cat package.json || echo "No root package.json!" && \
-    echo "Client package.json:" && cat client/package.json || echo "No client dir" && \
-    echo "Server package.json:" && cat server/package.json || echo "No server dir"
+# Copy all workspaces
+COPY apps/ ./apps/
+COPY client/ ./client/
+COPY database/ ./database/
+COPY docs/ ./docs/
+COPY env/ ./env/
+COPY packages/ ./packages/
+COPY scripts/ ./scripts/
+COPY server/ ./server/
+COPY shared/ ./shared/
+COPY tools/ ./tools/
 
-# Install deps - separate for better error visibility
-RUN bun install --verbose || (echo "bun install failed" && cat bun-debug.log && exit 1)
+# Install dependencies with isolated linker as recommended in docs
+RUN bun install --frozen-lockfile --linker isolated
 
-# Backend stage
-FROM base AS backend-build
-WORKDIR /app/server  # Adjust if server entry is different
-RUN bun run build || echo "No backend build script - skipping (dev mode?)"
-
-FROM oven/bun:latest AS backend
-WORKDIR /app/server
-COPY --from=backend-build /app /app
-EXPOSE 8080
-CMD ["bun", "run", "dev"]  # Change to "start" if prod script exists; many Bun apps use "dev" for hot reload
-
-# Frontend stage
-FROM base AS frontend-build
-WORKDIR /app/client  # Adjust if client dir name differs
+# 1. Build Shared (Dependency for everyone)
+WORKDIR /app/shared
 RUN bun run build
 
-FROM nginx:alpine AS frontend
-COPY --from=frontend-build /app/client/dist /usr/share/nginx/html  # Confirm output dir in vite.config or logs
+# 2. Build LifeForge UI (Depends on Server Types)
+# We need to generate server types first because UI depends on them (?)
+WORKDIR /app/server
+RUN bun run types
+
+WORKDIR /app/packages/lifeforge-ui
+RUN bun run build
+
+# 3. Build Server
+WORKDIR /app/server
+RUN bun run build
+
+# 4. Build Client
+WORKDIR /app/client
+# Run vite build directly since we already manually built dependencies above
+RUN bun run types && bun x vite build
+
+# --- Runtime Stage: Backend ---
+FROM oven/bun:latest AS backend-runtime
+WORKDIR /app
+
+# Copy necessary files for backend
+COPY --from=builder /app/server/dist ./dist
+# We need node_modules for runtime dependencies
+# In a perfect world we'd prune dev deps, but with workspaces it's complex.
+# Copying full node_modules is safest for now.
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+# Environment Setup
+ENV NODE_ENV=production
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["bun", "dist/server.js"]
+
+# --- Runtime Stage: Frontend ---
+FROM nginx:alpine AS frontend-runtime
+COPY --from=builder /app/client/dist /usr/share/nginx/html
+COPY --from=builder /app/client/nginx.conf /etc/nginx/conf.d/default.conf 2>/dev/null || :
+
 EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
