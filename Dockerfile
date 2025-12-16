@@ -44,7 +44,8 @@ RUN bun run build
 WORKDIR /app/client
 ARG VITE_API_HOST=/api
 ENV VITE_API_HOST=$VITE_API_HOST
-RUN bun run types && bun run vite build
+# Avoid 'bun run types' because it iterates over ../apps/ which might be empty, causing failure.
+RUN bun x tsc -b && bun run vite build
 
 # --- Runtime Stage: Backend ---
 FROM oven/bun:latest AS backend-runtime
