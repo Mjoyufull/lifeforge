@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore- Lazy to fix the TS config stuff
-import { LoggingService } from '@server/core/functions/logging/loggingService'
+import { LoggingService } from '../../../../server/src/core/functions/logging/loggingService'
 import chalk from 'chalk'
 
 /**
