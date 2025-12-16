@@ -52,6 +52,9 @@ echo "Running automated database initialization checks..."
 # We need a headless version. 
 # We'll treat this as a "try to run this custom script" using bun.
 
+# Ensure scripts directory exists
+mkdir -p /app/scripts
+
 cat <<EOF > /app/scripts/init-user.ts
 import { setupDefaultData } from '../tools/forgeCLI/src/commands/db-commands/functions/database-initialization';
 import getPocketbaseInstance from '../tools/forgeCLI/src/commands/db-commands/utils/pocketbase-utils';
@@ -81,7 +84,7 @@ echo "Waiting for PocketBase to be ready..."
 # We have wget in the image? 'oven/bun' is distroless-like? it might be minimal.
 # We will trust depends_on for now, or just retry the script.
 
-bun run /app/scripts/init-user.ts
+bun run scripts/init-user.ts
 
 echo "Starting main application..."
 exec "$@"
