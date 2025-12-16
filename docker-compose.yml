@@ -12,10 +12,10 @@ services:
       - PB_ADMIN_EMAIL=admin@lifeforge.local
       - PB_ADMIN_PASSWORD=password123
     volumes:
-      - ./pb_data:/pb_data
-      - ./pb_public:/pb_public
+      - pb_data:/pb_data
+      - pb_public:/pb_public
       # Mount migrations so they can be shared between backend (generator) and pb (consumer)
-      - ./database/pb_migrations:/pb_migrations
+      - pb_migrations:/pb_migrations
     healthcheck:
       test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8090/api/health" ]
       interval: 30s
@@ -44,10 +44,8 @@ services:
       - MASTER_KEY=${MASTER_KEY:-default_insecure_master_key_change_me}
     volumes:
       # Mount the same migrations folder so 'forge db generate-migrations' writes here
-      - ./database/pb_migrations:/app/database/pb_migrations
-      - ./pb_public:/app/pb_public # Should we mount public? The server might serve static files or just PB? 
-      # Actually, server code seems to rely on PB for files.
-      # Let's stick to migrations for now.
+      - pb_migrations:/app/database/pb_migrations
+      - pb_public:/app/pb_public
     depends_on:
       pocketbase:
         condition: service_healthy
@@ -72,8 +70,8 @@ networks:
     driver: bridge
 
 volumes:
-  # Define volumes if you want them managed by Docker, 
-  # or use bind mounts as configured above (./pb_data) for easier access on host.
-  # If using bind mounts, these named volumes aren't strictly necessary unless referenced.
-  pocketbase_data:
-  pocketbase_public:
+  # Using named volumes for data persistence is safer for Portainer 'Repository' stacks
+  # as it persists data even if the repository folder is wiped/re-cloned during updates.
+  pb_data:
+  pb_public:
+  pb_migrations:
