@@ -55,6 +55,9 @@ echo "Running automated database initialization checks..."
 # Ensure scripts directory exists
 mkdir -p /app/scripts
 
+# Ensure scripts directory exists
+mkdir -p /app/scripts
+
 cat <<EOF > /app/scripts/init-user.ts
 import { setupDefaultData } from '../tools/forgeCLI/src/commands/db-commands/functions/database-initialization';
 import getPocketbaseInstance from '../tools/forgeCLI/src/commands/db-commands/utils/pocketbase-utils';
