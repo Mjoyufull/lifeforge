@@ -77,6 +77,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 # Copy tools so we can run auto-init scripts that depend on forgeCLI code
 COPY --from=builder /app/tools ./tools
+# Copy server source code because forgeCLI imports from @server/src (TypeScript files)
+COPY --from=builder /app/server ./server
 
 # Environment Setup
 ENV NODE_ENV=production
