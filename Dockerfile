@@ -75,10 +75,15 @@ COPY --from=builder /app/server/dist ./dist
 # Copying full node_modules is safest for now.
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 # Copy tools so we can run auto-init scripts that depend on forgeCLI code
 COPY --from=builder /app/tools ./tools
 # Copy server source code because forgeCLI imports from @server/src (TypeScript files)
 COPY --from=builder /app/server ./server
+# Copy dependencies that might be imported by server or tools
+COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/env ./env
+COPY --from=builder /app/packages ./packages
 
 # Environment Setup
 ENV NODE_ENV=production
