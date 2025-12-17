@@ -266,7 +266,7 @@ export async function setupDefaultData(
   } catch (error) {
     CLILoggingService.error(
       `Failed to set up default data: ${
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : JSON.stringify(error, null, 2)
       }`
     )
     process.exit(1)
